@@ -1,0 +1,19 @@
+{
+  "short_name": "Credite CC",
+  "name": "Calcul Credite Personal",
+  "description": "Calculator de credite cu grafic de rambursare și plăți anticipate.",
+  "icons": [
+    {
+      "src": "https://ui-avatars.com/api/?name=CC&background=2563eb&color=fff&size=512&font-size=0.5&bold=true",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "./",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a"
+}

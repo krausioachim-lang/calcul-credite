@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ro" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calcul Credite</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="apple-touch-icon" href="https://ui-avatars.com/api/?name=CC&background=2563eb&color=fff&size=512&font-size=0.5&bold=true">
+    <link rel="icon" type="image/png" href="https://ui-avatars.com/api/?name=CC&background=2563eb&color=fff&size=512&font-size=0.5&bold=true">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f1f5f9; -webkit-tap-highlight-color: transparent; }
+        
+        /* Scrollbar personalizat pentru tabel */
+        .scadentar-scroll::-webkit-scrollbar { width: 6px; }
+        .scadentar-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .scadentar-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        #pdf-template { display: none; }
+        .pdf-export-style { padding: 20px; background: white; color: black; font-size: 10pt; }
+        .pdf-line { padding: 3px 0; border-bottom: 0.5px solid #eee; font-family: 'Courier New', monospace; }
+    </style>
+</head>
+<body class="antialiased pb-10">
+
+    <div class="max-w-6xl mx-auto px-4 pt-8">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-black tracking-tighter text-white uppercase italic">CALCUL CREDITE</h1>
+            <div class="h-1 w-20 bg-blue-600 mx-auto mt-2 rounded-full"></div>
+        </div>
+
+        <div class="flex flex-wrap justify-center gap-4 mb-8">
+            <button onclick="exportData()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 border border-slate-600">
+                <i class="fas fa-save"></i> SALVARE CREDIT
+            </button>
+            <label class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 border border-slate-600 cursor-pointer">
+                <i class="fas fa-folder-open"></i> ÎNCARCĂ CREDIT
+                <input type="file" id="importFile" class="hidden" onchange="importData(event)">
+            </label>
+            <button onclick="exportSimplePDF()" class="bg-red-700 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 border border-red-800 shadow-lg">
+                <i class="fas fa-file-pdf"></i> SALVARE PDF
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+                    <h2 class="text-lg font-semibold text-slate-200 mb-4 italic">Parametri</h2>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Monedă</label>
+                                <select id="currency" onchange="calculate()" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl outline-none text-white">
+                                    <option value="RON">RON</option>
+                                    <option value="EUR">EUR</option>
+                                    <option value="USD">USD</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Start</label>
+                                <input type="date" id="startDate" onchange="calculate()" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl outline-none text-white text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-400 mb-1">Suma Creditului</label>
+                            <input type="number" id="loanAmount" placeholder="Ex: 350000" oninput="calculate()" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl outline-none text-emerald-400 font-bold">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-400 mb-1">Dobândă (%)</label>
+                                <input type="number" id="interestRate" placeholder="0.00" step="0.01" oninput="calculate()" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl outline-none text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-400 mb-1">Luni</label>
+                                <input type="number" id="months" placeholder="Ex: 360" oninput="calculate()" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl outline-none text-white">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700">
+                    <h2 class="text-lg font-semibold text-emerald-400 mb-4 italic">Plată Extra</h2>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="extraMonth" placeholder="Luna" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg outline-none text-white text-sm">
+                        <input type="number" id="extraAmount" placeholder="Suma" class="w-full p-2 bg-slate-900 border border-slate-700 rounded-lg outline-none text-white text-sm">
+                    </div>
+                    <button onclick="addExtraPayment()" class="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition uppercase text-xs">Adaugă</button>
+                    <div id="extraList" class="mt-4 space-y-2 max-h-40 overflow-y-auto scadentar-scroll"></div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-blue-600 p-4 rounded-2xl text-white shadow-lg">
+                        <p class="text-blue-100 text-[10px] font-bold uppercase">Rată Lunară</p>
+                        <p id="resRate" class="text-xl font-bold">-</p>
+                    </div>
+                    <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                        <p class="text-slate-500 text-[10px] font-bold uppercase">Final Credit</p>
+                        <p id="resEndDate" class="text-lg font-bold text-white">-</p>
+                    </div>
+                    <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden flex flex-col">
+                        <div class="p-3 border-b border-slate-700">
+                            <p class="text-emerald-500 text-[9px] font-bold uppercase">Economie Dobândă</p>
+                            <p id="resInterestSaved" class="text-lg font-black text-emerald-400">-</p>
+                        </div>
+                        <div class="p-3 bg-slate-900/40">
+                            <p class="text-red-500 text-[9px] font-bold uppercase">Dobândă de Plată</p>
+                            <p id="resTotalInterestRem" class="text-lg font-black text-red-500">-</p>
+                        </div>
+                    </div>
+                    <div class="bg-emerald-900/40 p-4 rounded-2xl border border-emerald-700/50">
+                        <p class="text-emerald-500 text-[10px] font-bold uppercase">Luni Reduse</p>
+                        <p id="resSavedMonths" class="text-xl font-bold text-white">-</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 rounded-2xl shadow-xl border border-slate-700 overflow-hidden">
+                    <div class="p-4 bg-slate-900/50 border-b border-slate-700">
+                        <h3 class="font-bold text-slate-400 text-[10px] tracking-widest uppercase italic">Plan Rambursare</h3>
+                    </div>
+                    <div class="scadentar-scroll overflow-y-auto" style="max-height: 500px;">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-900 sticky top-0">
+                                <tr class="border-b border-slate-700 text-slate-400 text-[10px] uppercase">
+                                    <th class="p-4">Nr.</th>
+                                    <th class="p-4">Dobândă</th>
+                                    <th class="p-4">Principal</th>
+                                    <th class="p-4 text-center">Extra</th>
+                                    <th class="p-4 text-right">Sold</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="text-sm font-mono text-white"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pdf-template"></div>
+
+    <script>
+        // Logica de calcul și funcționalități
+        document.getElementById('startDate').valueAsDate = new Date();
+        let extraPayments = {};
+        const symbols = { 'RON': 'RON', 'EUR': '€', 'USD': '$' };
+
+        function fNum(val) { 
+            return val.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); 
+        }
+
+        function calculate() {
+            const P = parseFloat(document.getElementById('loanAmount').value) || 0;
+            const rateYear = parseFloat(document.getElementById('interestRate').value) || 0;
+            const monthsIn = parseInt(document.getElementById('months').value) || 0;
+            const curr = symbols[document.getElementById('currency').value];
+            const startVal = document.getElementById('startDate').value;
+            let startDate = startVal ? new Date(startVal) : new Date();
+
+            if (P <= 0 || rateYear <= 0 || monthsIn <= 0) {
+                document.getElementById('tableBody').innerHTML = '';
+                document.getElementById('resRate').innerText = '-';
+                document.getElementById('resInterestSaved').innerText = '-';
+                document.getElementById('resTotalInterestRem').innerText = '-';
+                document.getElementById('resSavedMonths').innerText = '-';
+                document.getElementById('resEndDate').innerText = '-';
+                return;
+            }
+
+            const r = rateYear / 12 / 100;
+            let M = r > 0 ? P * (r * Math.pow(1 + r, monthsIn)) / (Math.pow(1 + r, monthsIn) - 1) : P / monthsIn;
+            
+            let tempBalNoExtra = P;
+            let totalIntNoExtra = 0;
+            for(let i=0; i<monthsIn; i++){
+                let intM = tempBalNoExtra * r;
+                totalIntNoExtra += intM;
+                tempBalNoExtra -= (M - intM);
+            }
+
+            let bal = P;
+            let totalIntActual = 0;
+            let mCount = 0;
+            let webTable = '';
+            let pdfContent = `<div class="pdf-export-style"><h3>SCADENTAR CREDIT</h3><hr><br>`;
+
+            while (bal > 0.01 && mCount < 600) {
+                mCount++;
+                let date = new Date(startDate);
+                date.setMonth(startDate.getMonth() + mCount - 1);
+                
+                let interestThisMonth = bal * r;
+                let principalFromRata = M - interestThisMonth;
+                if (principalFromRata > bal) principalFromRata = bal;
+
+                let extra = extraPayments[mCount] || 0;
+                if (extra > (bal - principalFromRata)) extra = bal - principalFromRata;
+
+                bal = bal - principalFromRata - extra;
+                totalIntActual += interestThisMonth;
+
+                webTable += `
+                    <tr class="border-b border-slate-700/50 hover:bg-slate-700/20 transition">
+                        <td class="p-4 text-xs opacity-60">${mCount}</td>
+                        <td class="p-4 text-red-400">${fNum(interestThisMonth)}</td>
+                        <td class="p-4 text-emerald-400">${fNum(principalFromRata)}</td>
+                        <td class="p-4 text-center text-blue-400">${extra > 0 ? fNum(extra) : '-'}</td>
+                        <td class="p-4 text-right">${fNum(Math.max(0, bal))}</td>
+                    </tr>`;
+
+                pdfContent += `<div class="pdf-line">Luna ${mCount} | D: ${fNum(interestThisMonth)} | P: ${fNum(principalFromRata)} ${extra > 0 ? '| EX: '+fNum(extra) : ''} | <b>SOLD: ${fNum(Math.max(0, bal))} ${curr}</b></div>`;
+                
+                if (bal <= 0) {
+                    document.getElementById('resEndDate').innerText = date.toLocaleString('ro-RO', {month:'short', year:'numeric'}).toUpperCase();
+                    break;
+                }
+            }
+            pdfContent += `</div>`;
+
+            document.getElementById('tableBody').innerHTML = webTable;
+            document.getElementById('pdf-template').innerHTML = pdfContent;
+            document.getElementById('resRate').innerText = `${fNum(M)} ${curr}`;
+            document.getElementById('resInterestSaved').innerText = `${fNum(Math.max(0, totalIntNoExtra - totalIntActual))} ${curr}`;
+            document.getElementById('resTotalInterestRem').innerText = `${fNum(totalIntActual)} ${curr}`;
+            document.getElementById('resSavedMonths').innerText = Math.max(0, monthsIn - mCount) + " LUNI";
+        }
+
+        // Restul funcțiilor (PDF, Export, Import) rămân neschimbate
+        function exportSimplePDF() {
+            const element = document.getElementById('pdf-template');
+            if (element.innerHTML === "") return alert("Introdu datele creditului mai întâi.");
+            element.style.display = 'block';
+            html2pdf().set({ margin: 10, filename: 'credit.pdf', jsPDF: { unit: 'mm', format: 'a4' } }).from(element).save().then(()=>element.style.display='none');
+        }
+
+        function exportData() {
+            const data = { loanAmount: document.getElementById('loanAmount').value, interestRate: document.getElementById('interestRate').value, months: document.getElementById('months').value, currency: document.getElementById('currency').value, startDate: document.getElementById('startDate').value, extraPayments: extraPayments };
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:'application/json'})); a.download = `credit.json`; a.click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = JSON.parse(e.target.result);
+                document.getElementById('loanAmount').value = data.loanAmount; 
+                document.getElementById('interestRate').value = data.interestRate; 
+                document.getElementById('months').value = data.months; 
+                document.getElementById('currency').value = data.currency; 
+                document.getElementById('startDate').value = data.startDate;
+                extraPayments = data.extraPayments || {}; 
+                renderExtraList(); calculate();
+            };
+            reader.readAsText(file);
+        }
+
+        function addExtraPayment() {
+            const m = parseInt(document.getElementById('extraMonth').value);
+            const a = parseFloat(document.getElementById('extraAmount').value);
+            if (m > 0 && a > 0) { 
+                extraPayments[m] = (extraPayments[m] || 0) + a; 
+                document.getElementById('extraMonth').value = ''; 
+                document.getElementById('extraAmount').value = ''; 
+                renderExtraList(); calculate(); 
+            }
+        }
+
+        function renderExtraList() {
+            const container = document.getElementById('extraList'); container.innerHTML = '';
+            Object.keys(extraPayments).sort((a,b) => a-b).forEach(luna => {
+                container.innerHTML += `<div class="flex justify-between items-center bg-slate-900/50 border border-slate-700 p-2 px-3 rounded-lg"><span class="text-[10px] font-bold text-white uppercase">Luna ${luna}</span><div class="flex items-center gap-2"><span class="text-sm font-bold text-emerald-400">${fNum(extraPayments[luna])}</span><button onclick="delete extraPayments[${luna}]; renderExtraList(); calculate();" class="text-rose-500"><i class="fas fa-trash"></i></button></div></div>`;
+            });
+        }
+
+        // Activare Service Worker pentru Offline
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
+            });
+        }
+    </script>
+</body>
+</html>
